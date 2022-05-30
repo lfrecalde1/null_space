@@ -1,0 +1,8 @@
+<launch>
+  <node
+    pkg="null_space"
+    type="main.py"
+    name="null_space"
+    output="screen"
+  />
+</launch>
