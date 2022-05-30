@@ -5,6 +5,7 @@ from system_functions import f_d
 from system_functions import kinematic_controller
 from system_functions import dynamic_values
 from system_functions import f_dynamic_d
+from null_space_functions import potential_field
 import matplotlib.pyplot as plt
 
 
@@ -37,20 +38,32 @@ def main():
     v = np.zeros((2, t.shape[0]+1), dtype=np.float32)
     v[0, 0] = 0.0
     v[1, 0] = 0.0
+
+    # Obstacles definition
+    obs = np.zeros((2, 2), dtype=np.float32)
+    obs[0, 0] = 0.0
+    obs[1, 0] = 3.0
+    obs[0, 1] = 0.0
+    obs[1, 1] = -3.0
+
+    # Vector fiel inital
+    V_i = potential_field(h[:, 0], obs)
+    V = np.zeros((V_i.shape[0], t.shape[0]+1), dtype=np.float32)
+    V[:, 0] = V_i
+
     # Dynamic values
     chi = dynamic_values()
-
     # Control values vector
     u_control = np.zeros((2, t.shape[0]), dtype=np.float32)
 
     # Desired trajectory refernce
     hd = np.zeros((2, t.shape[0]), dtype=np.float32)
-    hd[0, :] = 1*np.sin(0.5*t)
-    hd[1, :] = 1*np.cos(0.5*t)
+    hd[0, :] = 3*np.sin(0.5*t)
+    hd[1, :] = 3*np.cos(0.5*t)
     # Desired trajectory dot
     hdp = np.zeros((2, t.shape[0]), dtype=np.float32)
-    hdp[0, :] = 1*0.5*np.cos(0.5*t)
-    hdp[1, :] = -1*0.5*np.sin(0.5*t)
+    hdp[0, :] = 3*0.5*np.cos(0.5*t)
+    hdp[1, :] = -3*0.5*np.sin(0.5*t)
 
     # Error vector definition
     he = np.zeros((2, t.shape[0]), dtype=np.float32)
@@ -69,6 +82,8 @@ def main():
         # System evolution
         v[:, k+1] = f_dynamic_d(v[:, k], u_control[:, k], chi, ts)
         h[:, k+1] = f_d(h[:, k], v[:, k+1], L, ts)
+        # potential_fiel values
+        V[:, k+1] = potential_field(h[:, k+1], obs)
 
     # System plot
     fig1, ax1 = fancy_plots_1()
@@ -128,6 +143,26 @@ def main():
     ax3.grid(color='#949494', linestyle='-.', linewidth=0.5)
     fig3.savefig("control_error.eps", resolution=300)
     fig3.savefig("control_error.png", resolution=300)
+    plt.show()
+    # System plot
+    fig4, ax4 = fancy_plots_1()
+    # Axis definition necesary to fancy plots
+    ax4.set_xlim((t[0], t[-1]))
+    field_1, = ax4.plot(t, V[0, 0:t.shape[0]],
+                        color='#00429d', lw=2, ls="-")
+    field_2, = ax4.plot(t, V[1, 0:t.shape[0]],
+                        color='#97a800', lw=2, ls="-")
+    ax4.set_ylabel(r"$[m]$", rotation='vertical')
+    ax4.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+    ax4.legend([field_1, field_2],
+               [r'$V_1$', r'$V_2$'],
+               loc="best",
+               frameon=True, fancybox=True, shadow=False, ncol=2,
+               borderpad=0.5, labelspacing=0.5, handlelength=3,
+               handletextpad=0.1, borderaxespad=0.3, columnspacing=2)
+    ax4.grid(color='#949494', linestyle='-.', linewidth=0.5)
+    fig4.savefig("vector_field.eps", resolution=300)
+    fig4.savefig("vector_field.png", resolution=300)
     plt.show()
 
 
