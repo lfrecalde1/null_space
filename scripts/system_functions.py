@@ -73,3 +73,47 @@ def kinematic_controller(h, hd, hdp, k1, k2, L):
     K2_1 = np.linalg.inv(K2)
     u = J_1@(hdp+K2@np.tanh(K2_1@K1@he))
     return u
+
+
+def dynamic_values():
+    x = np.zeros((7, 1), dtype=np.float32)
+    x[0, 0] = 0.189663950707076
+    x[1, 0] = 0.164747439046170
+    x[2, 0] = 0.985794879357231
+    x[3, 0] = 6.499003771150739e-05
+    x[4, 0] = 3.552425533589924e-05
+    x[5, 0] = 0.014529342845266
+    x[6, 0] = 0.914880354023648
+    return x
+
+
+def f_dynamic(v, vref, chi):
+    # Parameters definition
+    x = chi
+    # Velocities definiton
+    w = v[1]
+    # Inertial matrix definition
+    M = np.zeros((2, 2), dtype=np.float32)
+    M[0, 0] = x[0, 0]
+    M[0, 1] = 0.0
+    M[1, 0] = 0.0
+    M[1, 1] = x[1, 0]
+    # Centrifugal Forces
+    C = np.zeros((2, 2), dtype=np.float32)
+    C[0, 0] = x[2, 0]
+    C[0, 1] = x[3, 0] + x[4, 0]*w
+    C[1, 0] = x[5, 0]*w
+    C[1, 1] = x[6, 0]
+    # Matrix invertion section
+    M_1 = np.linalg.inv(M)
+    vp = -M_1@C@v+M_1@vref
+    return vp
+
+
+def f_dynamic_d(v, vref, chi, ts):
+    k1 = f_dynamic(v, vref, chi)
+    k2 = f_dynamic(v+(ts/2)*k1, vref, chi)
+    k3 = f_dynamic(v+(ts/2)*k2, vref, chi)
+    k4 = f_dynamic(v+(ts)*k3, vref, chi)
+    v = v + (ts/6)*(k1+2*k2+2*k3+k4)
+    return v

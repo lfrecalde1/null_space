@@ -3,6 +3,8 @@ import numpy as np
 from fancy_plots import fancy_plots_1
 from system_functions import f_d
 from system_functions import kinematic_controller
+from system_functions import dynamic_values
+from system_functions import f_dynamic_d
 import matplotlib.pyplot as plt
 
 
@@ -31,6 +33,13 @@ def main():
     h[1, 0] = y
     h[2, 0] = yaw
 
+    # Vector initial real velocities of the system
+    v = np.zeros((2, t.shape[0]+1), dtype=np.float32)
+    v[0, 0] = 0.0
+    v[1, 0] = 0.0
+    # Dynamic values
+    chi = dynamic_values()
+
     # Control values vector
     u_control = np.zeros((2, t.shape[0]), dtype=np.float32)
 
@@ -48,7 +57,7 @@ def main():
 
     # Controler gains
     k1 = 1
-    k2 = 0.5
+    k2 = 1
 
     # Sytem simulation
     for k in range(0, t.shape[0]):
@@ -57,7 +66,9 @@ def main():
         # Control Law
         u_control[:, k] = kinematic_controller(h[:, k], hd[:, k], hdp[:, k],
                                                k1, k2, L)
-        h[:, k+1] = f_d(h[:, k], u_control[:, k], L, ts)
+        # System evolution
+        v[:, k+1] = f_dynamic_d(v[:, k], u_control[:, k], chi, ts)
+        h[:, k+1] = f_d(h[:, k], v[:, k+1], L, ts)
 
     # System plot
     fig1, ax1 = fancy_plots_1()
